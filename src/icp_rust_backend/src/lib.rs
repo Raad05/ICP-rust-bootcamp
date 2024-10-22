@@ -41,6 +41,10 @@ thread_local! {
 }
 
 // setter functions
+#[ic_cdk::update]
+fn insert_exam(key: u64, value: Exam) -> Option<Exam> {
+    EXAM_MAP.with(|p| p.borrow_mut().insert(key, value))
+}
 
 // getter functions
 #[ic_cdk::query]
