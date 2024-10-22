@@ -1,7 +1,7 @@
 use candid::{CandidType, Decode, Deserialize, Encode};
 use ic_stable_structures::memory_manager::{MemoryId, MemoryManager, VirtualMemory};
 use ic_stable_structures::{BoundedStorable, DefaultMemoryImpl, StableBTreeMap, Storable};
-use std::default;
+use std::borrow;
 use std::{borrow::Cow, cell::RefCell};
 
 type Memory = VirtualMemory<DefaultMemoryImpl>;
@@ -40,3 +40,11 @@ thread_local! {
     static PARTICIPATION_PERCENTAGE_MAP: RefCell<StableBTreeMap<u64, u64, Memory>> = RefCell::new(
         StableBTreeMap::init(MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(1))),));
 }
+
+// setter functions
+#[ic_cdk::query]
+fn get_participation(key: u64) -> Option<u64> {
+    PARTICIPATION_PERCENTAGE_MAP.with(|p| p.borrow().get(&key))
+}
+
+// getter functions
