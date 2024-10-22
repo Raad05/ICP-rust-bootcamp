@@ -46,6 +46,11 @@ fn insert_exam(key: u64, value: Exam) -> Option<Exam> {
     EXAM_MAP.with(|p| p.borrow_mut().insert(key, value))
 }
 
+#[ic_cdk::update]
+fn insert_participation(key: u64, value: u64) -> Option<u64> {
+    PARTICIPATION_PERCENTAGE_MAP.with(|p| p.borrow_mut().insert(key, value))
+}
+
 // getter functions
 #[ic_cdk::query]
 fn get_participation(key: u64) -> Option<u64> {
