@@ -8,56 +8,39 @@ type Memory = VirtualMemory<DefaultMemoryImpl>;
 const MAX_VALUE_SIZE: u32 = 100;
 
 #[derive(CandidType, Deserialize)]
-struct Exam {
-    out_of: u8,
-    course: String,
-    curve: u8,
+struct Proposal {
+    description: String,
+    is_active: bool,
 }
 
-impl Storable for Exam {
-    fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
+impl Storable for Proposal {
+    fn to_bytes(&self) -> Cow<[u8]> {
         Cow::Owned(Encode!(self).unwrap())
     }
 
-    fn from_bytes(bytes: std::borrow::Cow<[u8]>) -> Self {
+    fn from_bytes(bytes: Cow<[u8]>) -> Self {
         Decode!(bytes.as_ref(), Self).unwrap()
     }
 }
 
-impl BoundedStorable for Exam {
+impl BoundedStorable for Proposal {
     const MAX_SIZE: u32 = MAX_VALUE_SIZE;
     const IS_FIXED_SIZE: bool = false;
 }
 
 thread_local! {
-    static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> = RefCell::new(
-        MemoryManager::init(DefaultMemoryImpl::default()));
+    static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> = RefCell::new(MemoryManager::init(DefaultMemoryImpl::default()));
 
-    static EXAM_MAP: RefCell<StableBTreeMap<u64, Exam, Memory>> = RefCell::new(
-        StableBTreeMap::init(MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(0))),));
-
-    static PARTICIPATION_PERCENTAGE_MAP: RefCell<StableBTreeMap<u64, u64, Memory>> = RefCell::new(
-        StableBTreeMap::init(MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(1))),));
-}
-
-// setter functions
-#[ic_cdk::update]
-fn insert_exam(key: u64, value: Exam) -> Option<Exam> {
-    EXAM_MAP.with(|p| p.borrow_mut().insert(key, value))
-}
-
-#[ic_cdk::update]
-fn insert_participation(key: u64, value: u64) -> Option<u64> {
-    PARTICIPATION_PERCENTAGE_MAP.with(|p| p.borrow_mut().insert(key, value))
+    static PROPOSAL_MAP: RefCell<StableBTreeMap<u64, Proposal, Memory>> = RefCell::new(StableBTreeMap::init(MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(0)))));
 }
 
 // getter functions
 #[ic_cdk::query]
-fn get_participation(key: u64) -> Option<u64> {
-    PARTICIPATION_PERCENTAGE_MAP.with(|p| p.borrow().get(&key))
+fn get_proposal(key: u64) -> Option<Proposal> {
+    PROPOSAL_MAP.with(|p| p.borrow().get(&key))
 }
 
 #[ic_cdk::query]
-fn get_exam(key: u64) -> Option<Exam> {
-    EXAM_MAP.with(|p| p.borrow().get(&key))
+fn get_proposal_count() -> u64 {
+    PROPOSAL_MAP.with(|p| p.borrow().len())
 }
