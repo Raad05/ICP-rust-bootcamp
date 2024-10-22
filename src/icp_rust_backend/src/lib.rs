@@ -10,6 +10,16 @@ const MAX_VALUE_SIZE: u32 = 100;
 #[derive(CandidType, Deserialize)]
 struct Proposal {
     description: String,
+    approve: u32,
+    reject: u32,
+    pass: u32,
+    is_active: bool,
+    voted: Vec<candid::Principal>,
+    owner: candid::Principal,
+}
+#[derive(CandidType, Deserialize)]
+struct CreateProposal {
+    description: String,
     is_active: bool,
 }
 
@@ -43,4 +53,19 @@ fn get_proposal(key: u64) -> Option<Proposal> {
 #[ic_cdk::query]
 fn get_proposal_count() -> u64 {
     PROPOSAL_MAP.with(|p| p.borrow().len())
+}
+
+// setter functions
+#[ic_cdk::update]
+fn create_proposal(key: u64, value: CreateProposal) -> Option<Proposal> {
+    let value: Proposal = Proposal {
+        description: value.description,
+        approve: 0,
+        reject: 0,
+        pass: 0,
+        is_active: value.is_active,
+        voted: vec![],
+        owner: ic_cdk::caller(),
+    };
+    PROPOSAL_MAP.with(|p| p.borrow_mut().insert(key, value))
 }
