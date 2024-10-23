@@ -1,12 +1,46 @@
-type Exam = record {
-    out_of: nat8;
-    course: text;
-    curve: nat8
-}
+// structs
+type Proposal = record {
+    description: text;
+    approve: nat32;
+    reject: nat32;
+    pass: nat32;
+    is_active: bool;
+    voted: vec principal;
+    owner: principal;
+};
 
+type CreateProposal = record {
+    description: text;
+    is_active: bool;
+};
+
+
+// enums
+type Result = variant {
+    Ok;
+    Err: VoteError;
+};
+
+type Choice = variant {
+    Approve;
+    Reject;
+    Pass;
+};
+
+type VoteError = variant {
+    AlreadyVoted;
+    ProposalIsNotActive;
+    NoSuchProposal;
+    AccessRejected;
+    UpdateError;
+};
+
+// functions
 service: {
-    "get_exam": (nat64) -> (opt Exam) query;
-    "get_participation": (nat64) -> (opt nat64) query;
-    "insert_exam": (nat64, Exam) -> (opt Exam);
-    "insert_participation": (nat64, nat64) -> (opt nat64);
-}
+    "get_proposal": (nat64) -> (opt Proposal) query;
+    "get_proposal_count": () -> (nat64) query;
+    "create_proposal": (nat64, CreateProposal) -> (opt Proposal);
+    "edit_proposal": (nat64, CreateProposal) -> (Result);
+    "end_proposal": (nat64) -> (Result);
+    "vote": (nat64, Choice) -> (Result);
+};
