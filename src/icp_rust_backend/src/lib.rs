@@ -124,3 +124,29 @@ fn edit_proposal(key: u64, proposal: CreateProposal) -> Result<(), VoteError> {
         }
     })
 }
+
+#[ic_cdk::update]
+fn end_proposal(key: u64) -> Result<(), VoteError> {
+    PROPOSAL_MAP.with(|p| {
+        let proposal_opt: Option<Proposal> = p.borrow().get(&key);
+        let mut proposal: Proposal;
+
+        match proposal_opt {
+            Some(value) => proposal = value,
+            None => return Err(VoteError::NoSuchProposal),
+        }
+
+        if ic_cdk::caller() != proposal.owner {
+            return Err(VoteError::AccessRejected);
+        }
+
+        proposal.is_active = false;
+
+        let res: Option<Proposal> = PROPOSAL_MAP.with(|p| p.borrow_mut().insert(key, proposal));
+
+        match res {
+            Some(_) => Ok(()),
+            None => Err(VoteError::UpdateError),
+        }
+    })
+}
