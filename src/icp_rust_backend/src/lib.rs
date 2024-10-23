@@ -57,13 +57,13 @@ fn get_proposal_count() -> u64 {
 
 // setter functions
 #[ic_cdk::update]
-fn create_proposal(key: u64, value: CreateProposal) -> Option<Proposal> {
+fn create_proposal(key: u64, proposal: CreateProposal) -> Option<Proposal> {
     let value: Proposal = Proposal {
-        description: value.description,
+        description: proposal.description,
         approve: 0,
         reject: 0,
         pass: 0,
-        is_active: value.is_active,
+        is_active: proposal.is_active,
         voted: vec![],
         owner: ic_cdk::caller(),
     };
