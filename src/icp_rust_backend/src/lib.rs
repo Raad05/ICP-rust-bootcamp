@@ -19,7 +19,6 @@ enum Choice {
 enum VoteError {
     AlreadyVoted,
     ProposalIsNotActive,
-    InvalidChoice,
     NoSuchProposal,
     AccessRejected,
     UpdateError,
@@ -162,7 +161,7 @@ fn vote(key: u64, choice: Choice) -> Result<(), VoteError> {
             None => return Err(VoteError::NoSuchProposal),
         }
 
-        let caller = ic_cdk::caller();
+        let caller: candid::Principal = ic_cdk::caller();
 
         if proposal.voted.contains(&caller) {
             return Err(VoteError::AlreadyVoted);
