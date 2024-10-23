@@ -7,6 +7,25 @@ type Memory = VirtualMemory<DefaultMemoryImpl>;
 
 const MAX_VALUE_SIZE: u32 = 100;
 
+// enums
+#[derive(CandidType, Deserialize)]
+enum Choice {
+    Approve,
+    Reject,
+    Pass,
+}
+
+#[derive(CandidType, Deserialize)]
+enum VoteError {
+    AlreadyVoted,
+    ProposalIsNotActive,
+    InvalidChoice,
+    NoSuchProposal,
+    AccessRejected,
+    UpdateError,
+}
+
+// structs
 #[derive(CandidType, Deserialize)]
 struct Proposal {
     description: String,
@@ -23,6 +42,7 @@ struct CreateProposal {
     is_active: bool,
 }
 
+// impmlementations
 impl Storable for Proposal {
     fn to_bytes(&self) -> Cow<[u8]> {
         Cow::Owned(Encode!(self).unwrap())
@@ -38,6 +58,7 @@ impl BoundedStorable for Proposal {
     const IS_FIXED_SIZE: bool = false;
 }
 
+// thread_local
 thread_local! {
     static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> = RefCell::new(MemoryManager::init(DefaultMemoryImpl::default()));
 
@@ -68,4 +89,38 @@ fn create_proposal(key: u64, proposal: CreateProposal) -> Option<Proposal> {
         owner: ic_cdk::caller(),
     };
     PROPOSAL_MAP.with(|p| p.borrow_mut().insert(key, value))
+}
+
+#[ic_cdk::update]
+fn edit_proposal(key: u64, proposal: CreateProposal) -> Result<(), VoteError> {
+    PROPOSAL_MAP.with(|p| {
+        let old_proposal_opt: Option<Proposal> = p.borrow().get(&key);
+        let old_proposal: Proposal;
+
+        match old_proposal_opt {
+            Some(value) => old_proposal = value,
+            None => return Err(VoteError::NoSuchProposal),
+        }
+
+        if ic_cdk::caller() != old_proposal.owner {
+            return Err(VoteError::AccessRejected);
+        }
+
+        let value: Proposal = Proposal {
+            description: proposal.description,
+            approve: old_proposal.approve,
+            reject: old_proposal.reject,
+            pass: old_proposal.pass,
+            is_active: proposal.is_active,
+            voted: old_proposal.voted,
+            owner: ic_cdk::caller(),
+        };
+
+        let res: Option<Proposal> = p.borrow_mut().insert(key, value);
+
+        match res {
+            Some(_) => Ok(()),
+            None => Err(VoteError::UpdateError),
+        }
+    })
 }
