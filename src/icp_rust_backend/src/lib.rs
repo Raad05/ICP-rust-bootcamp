@@ -150,3 +150,39 @@ fn end_proposal(key: u64) -> Result<(), VoteError> {
         }
     })
 }
+
+#[ic_cdk::update]
+fn vote(key: u64, choice: Choice) -> Result<(), VoteError> {
+    PROPOSAL_MAP.with(|p| {
+        let proposal_opt: Option<Proposal> = p.borrow().get(&key);
+        let mut proposal: Proposal;
+
+        match proposal_opt {
+            Some(value) => proposal = value,
+            None => return Err(VoteError::NoSuchProposal),
+        }
+
+        let caller = ic_cdk::caller();
+
+        if proposal.voted.contains(&caller) {
+            return Err(VoteError::AlreadyVoted);
+        } else if proposal.is_active == false {
+            return Err(VoteError::ProposalIsNotActive);
+        }
+
+        match choice {
+            Choice::Approve => proposal.approve += 1,
+            Choice::Reject => proposal.reject += 1,
+            Choice::Pass => proposal.pass += 1,
+        }
+
+        proposal.voted.push(caller);
+
+        let res: Option<Proposal> = p.borrow_mut().insert(key, proposal);
+
+        match res {
+            Some(_) => Ok(()),
+            None => return Err(VoteError::UpdateError),
+        }
+    })
+}
